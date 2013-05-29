@@ -116,7 +116,7 @@ __END__
 
 =head1 NAME
 
-rds-backup-util.pl - generate one-time-passwords using SHA1, master key, and user data
+otp-generator.pl - generate one-time-passwords using SHA1, master key, and user data
 
 =head1 SYNOPSIS
 
