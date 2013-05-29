@@ -3,13 +3,18 @@ otp-generator
 
 
 NAME
-    otp-generator.pl - generate one-time-passwords using SHA1, master key,
-    and user data
+===========
+
+otp-generator.pl - generate one-time-passwords using SHA1, master key, and user data
 
 SYNOPSIS
-    otp-generator.pl [OPTIONS]
+========
+
+otp-generator.pl [OPTIONS]
 
 OPTIONS
+=======
+
     --help
         Print a brief help message and exit.
 
@@ -62,22 +67,26 @@ OPTIONS
           # from date, i.e. permanent.
 
 ARGUMENTS
-    Arguments are not allowed.
+=========
+
+Arguments are not allowed.
 
 DESCRIPTION
-    Purpose of this script is to generate one time passwords, or permanent
-    passwords, using secret master key and other information: user name,
-    host name, role, resource, date, time, etc.
+===========
 
-    Script does that by generating of SHA1 hash in base64 encoding using
-    master key, date/time, and user provided data.
+Purpose of this script is to generate one time passwords, or permanent
+passwords, using secret master key and other information: user name,
+host name, role, resource, date, time, etc.
 
-    It is NOT safe to set UID or GID on this script to allow unprivileged
-    users to generate passwords. Use sudo and wrapper script for that
-    purpose to limit set of allowed options, i.e. if you need to allow
-    unprivileged user to generate OT passwords using master key without risk
-    of disclose master key or risk of generating of passwords for other
-    services, use following wrapper script as example:
+Script does that by generating of SHA1 hash in base64 encoding using
+master key, date/time, and user provided data.
+
+It is NOT safe to set UID or GID on this script to allow unprivileged
+users to generate passwords. Use sudo and wrapper script for that
+purpose to limit set of allowed options, i.e. if you need to allow
+unprivileged user to generate OT passwords using master key without risk
+of disclose master key or risk of generating of passwords for other
+services, use following wrapper script as example:
 
       #!/usr/bin/perl -wT
       $ENV{ 'PATH' } = '/bin:/usr/bin:/usr/local/bin';
@@ -85,4 +94,6 @@ DESCRIPTION
       exec '/usr/bin/otp-generator.pl', '-h','prod-backup', '-u','backup', '-r','mysql', '-d','YM';
 
 AUTHOUR
-    Volodymyr M. Lisivka <vlisivka@gmail.com>
+=======
+
+Volodymyr M. Lisivka <vlisivka@gmail.com>
