@@ -1,0 +1,5 @@
+XxXxXxXxXxXxXxXxXxXxXxXxXxXx
+# Put your master key here ^.
+# Only first line will work.
+# To generate a master key, run command:
+# dd if=/dev/urandom bs=21 count=1 2>/dev/null | base64
