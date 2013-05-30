@@ -1,7 +1,7 @@
 
 Name:           otp-generator
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Generate One-Time-Passwords
 Group:          System Environment/Base
 License:        GPLv2
@@ -46,7 +46,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %defattr(0644,root,root,755)
 
 %dir %attr(0700,root,root) %{_sysconfdir}/otp-generator/
-%attr(0700,root,root) %{_sysconfdir}/otp-generator/*
+%attr(0600,root,root) %{_sysconfdir}/otp-generator/*
 
 %attr(0755,root,root) %{_bindir}/*.pl
 %attr(0644,root,root) /usr/share/man/man1/*
