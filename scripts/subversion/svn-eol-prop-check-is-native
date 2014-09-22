@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for I in "$@"
+do
+  [ "`svn propget svn:eol-style "$I"`" == "native" ] || echo "$I"
+done

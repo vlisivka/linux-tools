@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Run a command with proper DISPLAY variable and X cookie
+
+exec docker run \
+    -e "DISPLAY=$DISPLAY" \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    "$@"

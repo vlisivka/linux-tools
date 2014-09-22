@@ -1,0 +1,13 @@
+#!/bin/bash
+# List SVN properties with values
+
+for I in "$@"
+do
+  echo "$I :"
+  PROPERTIES=`svn proplist "$I"| fgrep -v 'Properties on'`
+  for PROPERTY in $PROPERTIES
+  do
+    echo -n "$PROPERTY=" ; svn propget $PROPERTY "$I"
+  done
+  echo
+done

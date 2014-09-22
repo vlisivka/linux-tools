@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Convert filenames to lower case, e.g. INDEX.HTML -> index.html
+
+for FILE in "$@"
+do
+  FILE_LC="`echo -n "$FILE" | tr '[:upper:]' '[:lower:]'`"
+  [ "$FILE" == "$FILE_LC" ] || mv "$FILE" "$FILE_LC"
+done

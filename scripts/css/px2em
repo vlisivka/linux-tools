@@ -1,0 +1,9 @@
+#!/bin/bash
+# Replace px (pixels) by em (M width) for adaptive designs. Assume that 1em == 16px.
+# Changes are stored in separate file with .px2em extension.
+
+
+for I in "$@"
+do
+ perl -p -e 's/(-?[0-9.]+)px/($1\/16)."em\/*${1}px*\/"/ge' <"$I" >"$I.px2em"
+done

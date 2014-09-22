@@ -1,0 +1,6 @@
+#!/bin/sh
+# Convert object archive (.a) to shared library (.so)
+for I in "$@"
+do
+  ld --whole-archive -shared "$I" -o "${I%.a}.so"
+done

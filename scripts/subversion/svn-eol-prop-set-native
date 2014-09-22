@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for I in "$@"
+do
+  svn propset svn:eol-style native "$I"
+done

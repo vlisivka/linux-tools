@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Prepend each output line with nummber of seconds passed
+
+( if [ "$#" -ge 1 ]; then exec "$@" 2>&1 ; else exec cat - ; fi ) | while read LINE
+do
+  echo "$SECONDS: $LINE"
+done
