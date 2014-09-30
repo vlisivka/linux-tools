@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for I in "$@"
+do
+ perl -p -e 's/(-?[0-9.]+)px/($1\/16)."rem\/*${1}px*\/"/ge' <"$I" >"$I.px2rem"
+done
