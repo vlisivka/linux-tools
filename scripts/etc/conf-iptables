@@ -1,0 +1,327 @@
+#!/bin/bash
+
+set -ue
+. import.sh log arguments
+
+# Network interface to block all traffic on (except some services, like ssh)
+if ip link show p4p1 >/dev/null 2>&1
+then
+  EXTERNAL_INTERFACE="p4p1"
+elif ip link show enp6s0 >/dev/null 2>&1
+then
+  EXTERNAL_INTERFACE="enp6s0"
+elif ip link show eth0 >/dev/null 2>&1
+then
+  EXTERNAL_INTERFACE="eth0"
+else
+  EXTERNAL_INTERFACE=""
+fi
+
+# Ports to enable for incomming TCP traffic on external interface
+#INCOMMING_PORTS_TO_ENABLE=( 22 )
+INCOMMING_PORTS_TO_ENABLE=(  )
+
+# Ports to enable for outgoing TCP traffic on externall interface
+#OUTGOING_PORTS_TO_ENABLE=( 25 53 80 443 )
+OUTGOING_PORTS_TO_ENABLE=(  )
+
+# Ports to enable for incomming and outgoing UDP traffic on external interface
+#UDP_PORTS_TO_ENABLE=( 53 )
+UDP_PORTS_TO_ENABLE=( )
+
+# Set to true to configure IPv6 by default instead of IPv4
+IPV6_MODE="no"
+
+# Set to true to print commands instead of executing them
+DRY_RUN="no"
+
+# Set to yes to allow other hosts from outside to ping this host
+ALLOW_TO_BE_PINGED="no"
+
+# Set to yes to allow this host to ping outside hosts
+ALLOW_TO_PING="no"
+
+# Set to yes to keep existing rules by default (will create a mess)
+DONT_FLUSH_RULES="no"
+
+# List of internal networks to translate addresses from (e.g. 192.168.0.0/24 ).
+SNAT_INTERNAL_NETWORKS=( )
+
+# Override "iptables" command to allow dry-run and ipv6 mode
+iptables() {
+
+  local COMMAND
+
+  if [ "$IPV6_MODE" == "no" ]
+  then
+    COMMAND=`which iptables`
+  else
+    COMMAND=`which ip6tables`
+  fi
+
+  if [ "$DRY_RUN" != "no" ]
+  then
+    echo "$COMMAND $*"
+  else
+    "$COMMAND" "$@" || {
+      error "Cannot execute command: \"$COMMAND $*\"".
+      return 1
+    }
+  fi
+}
+
+iptables-save() {
+
+  local COMMAND
+  local FILE
+
+  if [ "$IPV6_MODE" == "no" ]
+  then
+    COMMAND=`which iptables-save`
+    FILE='/etc/sysconfig/iptables'
+  else
+    COMMAND=`which ip6tables-save`
+    FILE='/etc/sysconfig/ip6tables'
+  fi
+
+  if [ "$DRY_RUN" != "no" ]
+  then
+    echo "$COMMAND $* > $FILE"
+  else
+    "$COMMAND" "$@" > "$FILE" || {
+      error "Cannot execute command: \"$COMMAND $*\"".
+      return 1
+    }
+  fi
+}
+
+main() {
+  local I
+
+  if (( $# > 0 ))
+  then
+    error "Arguments are not allowed."
+    return 1
+  fi
+
+  # Install iptables-services if it is not already installed
+  rpm -q iptables-services >/dev/null || {
+    info "Installing iptables-services..."
+    yum -y install iptables-services || {
+      error "Cannot install iptables-services using command \"yum -y install iptables-services\"."
+      return 1
+    }
+  }
+
+  # Get IP address of externall interface
+  local EXT_ADDR=`ip -4 address show dev "$EXTERNAL_INTERFACE" | grep -m1 ' inet ' | egrep -o '([0-9]+[.]){3}[0-9]+/[0-9]+' | cut -d / -f 1`
+  [ -n "$EXT_ADDR" ] || { error "Cannot determin IP address of external network interface \"$EXTERNAL_INTERFACE\"."; return 1; }
+
+
+  if [ "$DONT_FLUSH_RULES" == "no" ]
+  then
+    # Flush iptables rules
+    info "Flushing iptables rules."
+    # Flush all rules
+    iptables -F
+    # Flush network address translation tables
+    iptables -t nat -F
+    #iptables -t mangle -F
+    # Delete all chains except built-in INPUT OUTPUT and FORWARD
+    iptables -X
+  fi
+
+  info "Setting default policy to ACCEPT on all interfaces."
+  iptables -P INPUT   ACCEPT
+  iptables -P FORWARD ACCEPT
+  iptables -P OUTPUT  ACCEPT
+
+  # Enable incomming TCP traffic on all requested ports on external interface
+  if (( ${#INCOMMING_PORTS_TO_ENABLE[@]} > 0 ))
+  then
+    info "Enabling incomming TCP traffic on external interface \"$EXTERNAL_INTERFACE\" on ports: ${INCOMMING_PORTS_TO_ENABLE[*]}."
+    for I in "${INCOMMING_PORTS_TO_ENABLE[@]}"
+    do
+      iptables -A INPUT  -i "$EXTERNAL_INTERFACE" -p tcp --dport "$I" -m state --state NEW,ESTABLISHED -j ACCEPT
+      iptables -A OUTPUT -o "$EXTERNAL_INTERFACE" -p tcp --sport "$I" -m state --state ESTABLISHED     -j ACCEPT
+    done
+  fi
+
+  # Enable outgoing TCP traffic on all requested ports on external interface
+  if (( ${#OUTGOING_PORTS_TO_ENABLE[@]} > 0 ))
+  then
+    info "Enabling outgoing traffic TCP on external interface \"$EXTERNAL_INTERFACE\" on ports: ${OUTGOING_PORTS_TO_ENABLE[*]}."
+    for I in "${OUTGOING_PORTS_TO_ENABLE[@]}"
+    do
+      iptables -A OUTPUT -o "$EXTERNAL_INTERFACE" -p tcp --dport "$I" -m state --state NEW,ESTABLISHED -j ACCEPT
+      iptables -A INPUT  -i "$EXTERNAL_INTERFACE" -p tcp --sport "$I" -m state --state ESTABLISHED     -j ACCEPT
+    done
+  fi
+
+  # Enable incomming and outgoing UDP traffic on all requested ports on external interface
+  if (( ${#UDP_PORTS_TO_ENABLE[@]} > 0 ))
+  then
+    info "Enabling outgoing and incomming UDP traffic on external interface \"$EXTERNAL_INTERFACE\" on ports: ${UDP_PORTS_TO_ENABLE[*]}."
+    for I in "${UDP_PORTS_TO_ENABLE[@]}"
+    do
+      iptables -A OUTPUT -p udp -o "$EXTERNAL_INTERFACE" --dport "$I" -j ACCEPT
+      iptables -A INPUT  -p udp -i "$EXTERNAL_INTERFACE" --sport "$I" -j ACCEPT
+    done
+  fi
+
+  if [ "$ALLOW_TO_BE_PINGED" != "no" ]
+  then
+    info "Allowing host to be ping-ed on external interface."
+    iptables -A INPUT  -p icmp --icmp-type echo-request -j ACCEPT
+    iptables -A OUTPUT -p icmp --icmp-type echo-reply   -j ACCEPT
+  fi
+
+  if [ "$ALLOW_TO_PING" != "no" ]
+  then
+    info "Allowing host to ping other hosts in external interface."
+    iptables -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
+    iptables -A INPUT  -p icmp --icmp-type echo-reply   -j ACCEPT
+  fi
+
+  # Allow SNAT (source network address translation) to allow access from internal network to external network
+  if (( ${#SNAT_INTERNAL_NETWORKS[@]} > 0 ))
+  then
+    for I in "${SNAT_INTERNAL_NETWORKS[@]}"
+    do
+      info "Allowing source address translation for $I to be mapped at $EXT_ADDR."
+      iptables -t nat -A POSTROUTING -o "$EXTERNAL_INTERFACE" -s "$I" -j SNAT --to-source "$EXT_ADDR"
+    done
+  fi
+
+  info "Setting default policy to DROP on external interface."
+  iptables -A INPUT -i "$EXTERNAL_INTERFACE" -j DROP
+  iptables -A OUTPUT -o "$EXTERNAL_INTERFACE" -j DROP
+  iptables -A FORWARD -o "$EXTERNAL_INTERFACE" -j DROP
+
+  info "Setting default policy to ACCEPT on local interface."
+  iptables -A INPUT -i "lo" -j ACCEPT
+  iptables -A OUTPUT -o "lo" -j ACCEPT
+  iptables -A FORWARD -o "lo" -j ACCEPT
+
+  # Save changes
+  info "Saving changes."
+  iptables-save
+
+}
+
+# Parse arguments
+parse_arguments \
+  "-I|--external-inteface)EXTERNAL_INTERFACE;S" \
+  "-i|--incomming-tcp-port)INCOMMING_PORTS_TO_ENABLE;A" \
+  "-o|--outgoing-tcp-port)OUTGOING_PORTS_TO_ENABLE;A" \
+  "-u|--udp-port)UDP_PORTS_TO_ENABLE;A" \
+  "-6|--ipv6)IPV6_MODE;B" \
+  "-d|--dry-run)DRY_RUN;B" \
+  "-p|--allow-to-ping)ALLOW_TO_PING;B" \
+  "-P|--allow-to-be-pinged)ALLOW_TO_BE_PINGED;B" \
+  "-F|--dont-flush)DONT_FLUSH_RULES;B" \
+  "-s|--snat)SNAT_INTERNAL_NETWORKS;A" \
+  -- "${@}" || exit $?
+
+# Invoke main function
+main "${ARGUMENTS[@]:+${ARGUMENTS[@]}}"
+
+exit $?
+
+__END__
+
+=pod
+
+=head1 NAME
+
+
+config-iptables - enable only specific ports on external network interface
+
+=head1 SYNOPSIS
+
+config-iptables [OPTIONS] [--] RULES...
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--help> | B<-h>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Show manual page.
+
+=item B<-I> | B<--external-inteface> EXTERNAL_INTERFACE_NAME
+
+Name of external interface, e.g. eth0, p4p1, wlan0, etc.
+Only one interface can be external.
+
+Default value is "p4p1".
+
+=item B<-i> | B<--incomming-tcp-port> INCOMMING_PORT_TO_ENABLE
+
+Port to enable for incomming TCP traffic, e.g. 22 (sshd). This option can
+be used multiple times.
+
+=item B<-o> | B<--outgoing-tcp-port> OUTGOING_PORT_TO_ENABLE
+
+Port to enable for outgoing TCP traffic, e.g. 80 (http) or 443
+(https). This option can be used multiple times.
+
+=item B<-u> | B<--udp-port> UDP_PORT_TO_ENABLE
+
+Port to enable for incomming and outgoing UDP traffic, e.g. 53
+(dns). There is no state in UDP protocol, so packets cannot be
+accepted after initiating a connection, because no connection is created.
+
+=item B<-6> | B<--ipv6>
+
+Configure IPv6 tables instead of IPv4.
+
+=item B<-d> | B<--dry-run>
+
+Print commands instead of executing them.
+
+=item B<-p> | B<--allow-to-ping>
+
+Allow this host to ping other hosts on external interface.
+
+=item B<-P> | B<--allow-to-be-pinged>
+
+Allow other hosts to ping this host on external interface.
+
+=item B<-F> | B<--dont-flush>
+
+Do not flush rules at begining. Can be used to configure
+multiple external interfaces, e.g. p4p1 (with flush(, then wlan0 (without
+flush).
+
+=item B<-s> | B<--snat> INTERNAL_NETWORK
+
+Enable source address translation from given internal network.
+This option can be used multiple times.
+
+=back
+
+Unlike many other programs, this program stops option parsing at first
+non-option argument.
+
+Use -- in commandline arguments to strictly separate options and arguments.
+
+=head1 ARGUMENTS
+
+Arguments are not allowed.
+
+=head1 DESCRIPTION
+
+Tool to enable only specific incomming and outgoing ports on
+external interface and enable unrestricted traffic on all other internal
+interfaces.
+
+=head1 AUTHOUR
+
+Volodymyr M. Lisivka <vlisivka@gmail.com>
+
+=cut
