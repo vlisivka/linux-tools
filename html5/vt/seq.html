@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+
+   	<!-- Mobile Specific Metas -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <title>My HTML File</title>
+    <!--script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script -->
+    <!--script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.min.js"></script -->
+    <script src="vendor/jquery-1.8.2.min.js"></script>
+    <script src="vendor/angular-1.2.16.js"></script>
+    <script src="vendor/angular-touch.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body ng-app="app">
+
+<video id="video" controls style="width:80%;" preload="auto">
+    <source src="video/waltz.mp4"
+          type='video/mp4;codecs="avc1.42E01E,mp4a.40.2"' />
+    <source src="video/waltz.webm"
+          type='video/webm;codecs="vp8, vorbis"' />
+</video>
+
+<div ng-controller="TimesListController">
+    <form>
+        <label>Beats per bar: <input type="range" min=3 max=4 ng-model="beatsPerBar"/> {{beatsPerBar}}</label>
+        <label>Click to add time to sequence: <button ng-click="addTime()" accesskey="z">Add time</button></label>
+        <label>Click to clear sequence: <button ng-click="clearSequence()">Clear</button></label>
+    </form>
+    [
+    <p ng-repeat="bar in sequence track by $index">
+        [ <span ng-repeat="beat in bar track by $index">{{beat}} <span ng-if="!$last">,</span> </span> ],
+    </p>
+    ];
+</div>
+
+</body>
+    <script>
+
+        var app = angular.module('app', ['ngTouch']);
+
+
+        app.controller('TimesListController', function TimesListController($scope) {
+            $scope.beatsPerBar = 3;
+
+            $scope.sequence=[];
+            $scope.videoElement = document.querySelector("video");
+
+            $scope.addTime = function addTime() {
+
+                // If sequence is empty or latest bar is filled
+                if($scope.sequence.length==0 || $scope.sequence[$scope.sequence.length-1].length>=$scope.beatsPerBar) {
+                    $scope.sequence.push([]);
+                }
+
+                // Add current time to last bar
+                $scope.sequence[$scope.sequence.length-1].push($scope.videoElement.currentTime);
+            };
+
+            $scope.clearSequence=function clearSequence() {
+                $scope.sequence=[];
+            };
+
+        });
+
+    </script>
+</html>

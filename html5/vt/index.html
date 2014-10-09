@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+
+   	<!-- Mobile Specific Metas -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <!--meta name="viewport" content="width=device-width,height=device-height,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0"-->
+    <!-- android -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="translucent-black">
+    <meta name="apple-mobile-web-app-title" content="My App">
+
+    <title>My HTML File</title>
+    <!--script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script -->
+    <!--script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.min.js"></script -->
+    <script src="vendor/jquery-1.8.2.min.js"></script>
+    <script src="vendor/angular-1.2.16.js"></script>
+    <script src="vendor/angular-touch.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body ng-app="app">
+
+<div ng-controller="SegmentListController" class="container">
+    <div style="align:center;">
+        <video id="video" controls ng-style="{ width:current.playerWidth+'%'}" loop preload="auto">
+            <!--source src="video/waltz.mp4" type='video/mp4;codecs="avc1.42E01E,mp4a.40.2"' / -->
+            <source src="video/waltz.webm" type='video/webm;codecs="vp8, vorbis"' />
+        </video>
+    <div>
+
+    <!-- Current time: {{current.time}}, fragment start: {{current.bounds.start}}, fragment end: {{current.bounds.end}}. -->
+    <form>
+        <div>
+            <label>From: <select ng-model="current.bounds.start"><option value="0">beginning</option><option ng-repeat="bar in bars track by $index" value="{{bar[0]}}">{{$index+1}}</option></select></label>
+            <label>To: <select ng-model="current.bounds.end"><option ng-repeat="bar in bars track by $index" value="{{bar[0]}}">{{$index+1}}</option><option value="1000000000000">end</option></select></label>
+            <label><button>Add to preset</button></label>
+        </div>
+        <div>
+        <label>Padding: <input type="range" min=0 max=5 step=0.1 ng-model="current.padding"/> <span class="numericValue3em">{{current.padding}}S</span></label>
+        <label>Speed: <input type="range" min=0.1 max=1 step=0.1  ng-model="current.speed"/> <span class="numericValue3em">{{current.speed}}X</span></label>
+        <label>Player width: <input type="range" min=10 max=150 step=1 ng-model="current.playerWidth"/> <span class="numericValue3em">{{current.playerWidth}}%</span></label>
+        </div>
+    </form>
+    <ul>
+        <li ng-repeat="cue in cues track by $index" ng-controller="VideoSegmentController">
+            <a ng-click="selectCue($index)" ng-class="{selected:isSelected($index)}">{{cue.text}}</a>
+        </li>
+    </ul>
+</div>
+
+</body>
+    <script>
+
+        var app = angular.module('app', ['ngTouch']);
+
+
+        app.controller('SegmentListController', function SegmentListController($scope) {
+
+            // Sequence of sets of beats
+            var b = [
+[ 3.982728, 4.623582, 5.383414, ],
+[ 6.08029, 6.738069, 7.46773, ],
+[ 8.140392, 8.904405, 9.602542, ],
+[ 10.267269, 10.899624, 11.729903, ],
+[ 12.312106, 12.970177, 13.628174, ],
+[ 14.261592, 14.979875, 15.663809, ],
+[ 16.361108, 17.059088, 17.748114, ],
+[ 18.433532, 19.152724, 19.865464, ],
+[ 20.58556, 21.266439, 22.081748, ],
+[ 22.671616, 23.391763, 24.071968, ],
+[ 24.752702, 25.409039, 26.119851, ],
+[ 26.751981, 27.435646, 28.120992, ],
+[ 28.769157, 29.484102, 30.217099, ],
+[ 30.938871, 31.618512, 32.366585, ],
+[ 33.046353, 33.729399, 34.36002, ],
+[ 34.985862, 35.697888, 36.421471, ],
+[ 37.080663, 37.797739, 38.490591, ],
+[ 39.141375, 39.840444, 40.520998, ],
+[ 41.223171, 41.990293, 42.608185, ],
+[ 43.308047, 44.000935, 44.710559, ],
+[ 45.380612, 46.071041, 46.789625, ],
+[ 47.471673, 48.139439, 48.840282, ],
+[ 49.472103, 50.190315, 50.952662, ],
+[ 51.61807, 52.321109, 53.008976, ],
+[ 53.65085, 54.339145, 55.041009, ],
+[ 55.741191, 56.400529, 57.072196, ],
+[ 57.789946, 58.405036, 59.152146, ],
+[ 59.809795, 60.440579, 61.190219, ],
+[ 61.862186, 62.513101, 63.280678, ],
+[ 63.982748, 64.700834, 65.353115, ],
+[ 66.018008, 66.707364, 67.342533, ],
+[ 68.103973, 68.810229, 69.508335, ],
+[ 70.20079, 70.994127, 71.62212, ],
+[ 72.241126, 72.929635, 73.602005, ],
+[ 74.319683, 75.031927, 75.710685, ],
+[ 76.381158, 77.151846, 77.831747, ],
+[ 78.552665, 79.179486, 79.911494, ],
+[ 80.467945, 81.159889, 81.879613, ],
+[ 82.543744, 83.188786, 83.848741, ],
+[ 84.592148, 85.288195, 86.008132, ],
+[ 86.749822, 87.503193, 88.193405, ],
+[ 88.889896, 89.626947, 90.378105, ],
+];
+
+            $scope.cues=[
+                {text:"Ставання в пару", start:b[0][0], end:b[2][0]},
+                {text:"Відкритий правий поворот", start:b[2][0], end:b[4][0]},
+                {text:"Cue3", start:b[4][0], end:b[6][0]},
+                {text:"Cue4", start:b[6][0], end:b[8][0]},
+                {text:"Whole video", start:0, end:1e12}
+                        ];
+            $scope.bars=b;
+            $scope.videoElement=document.querySelector("video");
+            $scope.current={
+                bounds:{start:0, end:1e12},
+                time:0,
+                padding:0, // 0s
+                speed:1, // 1.x
+                playerWidth:90 //90%
+            };
+            // console.log($scope.videoElement);
+
+            // Listen for playback speed changes
+            $scope.$watch('current.speed', function updateRate(newValue, oldValue) {
+                $scope.videoElement.playbackRate = newValue;
+                $scope.videoElement.defaultPlaybackRate = newValue;
+            });
+
+            // Listen for start changes
+            $scope.$watch('current.bounds.start', function udateCurrentTimeAtStartChange(newValue, oldValue) {
+                try {
+                    $scope.videoElement.currentTime=$scope.current.bounds.start-$scope.current.padding;
+                }catch(e) { ; }
+            });
+
+
+            $scope.videoElement.addEventListener("timeupdate",
+              function timeupdate(event) {
+                  //console.log("Time update. Start: "+($scope.current.bounds.start-$scope.current.padding)+", end: "+($scope.current.bounds.end-(-$scope.current.padding))+", current time: "+this.currentTime+".");
+
+                  if (this.currentTime >= ($scope.current.bounds.end-(-$scope.current.padding))) {
+                    this.currentTime=$scope.current.bounds.start-$scope.current.padding;
+                    //this.pause();
+                  }
+
+                  $scope.current.time=this.currentTime;
+                  $scope.$apply();
+            });
+
+        });
+
+        app.controller('VideoSegmentController', function VideoSegmentController($scope) {
+            $scope.selectCue=function selectCue($index) {
+                //console.log($scope.cue);
+                $scope.current.index=$index;
+                $scope.current.bounds.start=$scope.cue.start;
+                $scope.current.bounds.end=$scope.cue.end;
+                $scope.videoElement.currentTime=$scope.current.bounds.start-$scope.current.padding;
+
+                $scope.videoElement.play();
+
+                //console.log("Clicked. Start: "+$scope.current.bounds.start+", end: "+$scope.current.bounds.end+".");
+            };
+            $scope.isSelected=function isSelected($index) {
+                return $scope.current.index===$index;
+            };
+        });
+
+    </script>
+</html>
