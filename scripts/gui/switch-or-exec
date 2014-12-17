@@ -75,6 +75,12 @@ main() {
 
 parse_arguments "-w|--window-class)WINDOW_CLASS;S" "-c|--command)STARTUP_COMMAND;S" -- "${@}" || exit $?
 
+which wmctrl >/dev/null || {
+  error "wmctrl tool is required for this script."
+  exit 1
+}
+
+
 [ -n "$STARTUP_COMMAND" ] || {
   error "Startup command is required for this script."
   exit 1
