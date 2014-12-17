@@ -122,10 +122,10 @@ Show manual page.
 
 Window class to switch to.
 
-Hint: use command "wmctrl -lx" to list windows with their classes.
+B<Hint:> use command C<wmctrl -lx> to list windows with their classes.
 
-If not given, then command will be used to generate window class 
-( "cmd" -> "cmd.Cmd" ).
+If not given, then value of command option will be used to generate
+window class ( "cmd" -> "cmd.Cmd" ).
 
 Examples:
 
@@ -159,16 +159,9 @@ Examples:
   # Try to switch to window with class "gedit.Gedit"
   # or execute command "gedit --encoding=utf-8" in the background
   switch-or-exec -c gedit -- --encoding=utf-8
-
+  
   # Try to switch to window with class "Navigator.Firefox"
   # or execute command "firefox" in the background
-  switch-or-exec -w Navigator.Firefox -c firefox
-
-
-  # Gedit:
-  switch-or-exec -c gedit
-  
-  # Firefox
   switch-or-exec -w Navigator.Firefox -c firefox
   
   # gnome-Terminal
