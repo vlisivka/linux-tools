@@ -1,5 +1,5 @@
 #!/bin/bash
-# switch-org-exec - swith to open window or launch new instance of a program
+# switch-or-exec - swith to open window or launch new instance of a program.
 # License: GPLv2+
 # Author: Volodymyr M. Lisivka <vlisivka@gmail.com>
 
@@ -106,7 +106,7 @@ __END__
 
 =head1 NAME
 
-switch-or-exec - switch to/between open window or launch new instance of program
+switch-or-exec - switch to/between open window or launch new instance of program.
 
 =head1 SYNOPSIS
 
@@ -182,6 +182,8 @@ Examples:
 =head1 SEE ALSO
 
 wmctrl(1)
+
+toggle-or-exec / jump-or-exec in Sawfish.
 
 =head1 AUTHOUR
 
